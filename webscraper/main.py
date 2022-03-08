@@ -9,6 +9,9 @@ from tqdm import tqdm
 
 base_url = "https://www.otodom.pl/pl/"
 
+tags_of_interest = ["characteristics", "dateCreated", "dateModified",
+                    "description", "featuresByCategory", "location", "statistics"]
+
 
 def get_json(url):      # TODO read about docstrig convention
     """
@@ -63,27 +66,21 @@ def get_images(urls):
 
 
 def get_descriptions(urls):
-
     descriptions = []
 
-    for relative_url in tqdm(urls):
-        source = requests.get(base_url + relative_url).content
-        soup = BeautifulSoup(source, "lxml")
-
-        description_paragraphs = soup.find("section", role="region").find(
-            attrs={"data-cy": "adPageAdDescription"}).find_all("p")
-        description = "".join([p.text for p in description_paragraphs])
+    for url in tqdm(urls):
+        json_object = get_json(url)
+        soup = BeautifulSoup(json_object["ad"]["description"], "lxml")
+        description = soup.get_text(separator=' ')
         descriptions.append(description)
 
     return descriptions
 
 
-def get_details():
+def get_details(urls):
     with open("example.html") as source:
         soup = BeautifulSoup(source, "lxml")
 
-    tags_of_interest = ["characteristics", "dateCreated", "dateModified",
-                        "description", "featuresByCategory", "location", "statistics"]
     json_string = soup.find("script", id="__NEXT_DATA__")
     json_obj = json.loads(json_string.text)
     json_features = json_obj["props"]["pageProps"]["ad"]["characteristics"]
@@ -92,6 +89,6 @@ def get_details():
 
 if __name__ == "__main__":
     links_list = get_links()
-    get_images(links_list)
+    # get_images(links_list)
     # get_descriptions(links_list)
-    # get_details()
+    get_details(links_list)
