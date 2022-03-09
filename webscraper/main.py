@@ -4,8 +4,8 @@ import json
 from tqdm import tqdm
 
 
-# TODO Rethink the way that urls and other data is obtained.
-#  Current system will fail as soon as the website changes
+# TODO make a get method for each of tags. Maybe covert to class? Change get_details
+
 
 base_url = "https://www.otodom.pl/pl/"
 
@@ -13,82 +13,104 @@ tags_of_interest = ["characteristics", "dateCreated", "dateModified",
                     "description", "featuresByCategory", "location", "statistics"]
 
 
-def get_json(url):      # TODO read about docstrig convention
-    """
-    Return json object from given url
-    :param url: a string containing url
-    :return: json object
-    """
+class JSONUser:     # TODO change the name, this one is bad
 
-    source = requests.get(url).content
-    soup = BeautifulSoup(source, "lxml")
-    json_string = soup.find("script", id="__NEXT_DATA__")
-    json_object = json.loads(json_string.text)
+    def __init__(self, url):
+        self.data_json = self.get_json(url)
 
-    return json_object["props"]["pageProps"]
+    def get_json(self, url):
+        """
+        Return json object from given url
+        :param url: a string containing url
+        :return: json object
+        """
 
-
-def get_links():    # TODO modify to accept input urls, districts and such
-    relative_url = "oferty/sprzedaz/mieszkanie/warszawa/"
-    districts = ["zoliborz"]
-    json_object = get_json(base_url + relative_url + districts[0])
-    # pages = json_object["data"]["searchAds"]["pagination"]["totalPages"]
-    pages = 1
-    offers_urls = []
-    for i in tqdm(range(1, pages + 1)):
-        url = base_url + relative_url + districts[0] + "?page=" + str(i)
-        page_json = get_json(url)
-        for item in page_json["data"]["searchAds"]["items"]:
-            offers_urls.append(base_url + 'oferta/' + item["slug"])
-
-    return offers_urls
-
-
-def get_images(urls):
-    """
-    Return list of links to images of offers
-
-    :param urls: list of offers urls
-    :return: list of links to images
-    """
-    image_urls = []
-
-    for url in tqdm(urls):
-        current_url_images = []
-        json_object = get_json(url)
-        images = json_object["ad"]["images"]
-        for image in images:
-            current_url_images.append(image["large"])
-
-        image_urls.append(current_url_images)
-
-    return image_urls
-
-
-def get_descriptions(urls):
-    descriptions = []
-
-    for url in tqdm(urls):
-        json_object = get_json(url)
-        soup = BeautifulSoup(json_object["ad"]["description"], "lxml")
-        description = soup.get_text(separator=' ')
-        descriptions.append(description)
-
-    return descriptions
-
-
-def get_details(urls):
-    with open("example.html") as source:
+        source = requests.get(url).content
         soup = BeautifulSoup(source, "lxml")
+        json_string = soup.find("script", id="__NEXT_DATA__")
+        self.data_json = json.loads(json_string.text)
 
-    json_string = soup.find("script", id="__NEXT_DATA__")
-    json_obj = json.loads(json_string.text)
-    json_features = json_obj["props"]["pageProps"]["ad"]["characteristics"]
-    print(print(json.dumps(json_features, indent=4)))
+        return self.data_json["props"]["pageProps"]
+
+
+class WebCrawler(JSONUser):
+    def __init__(self, url):
+        super().__init__(url)
+
+    def get_links(self):    # TODO modify to accept input urls, districts and such
+        relative_url = "oferty/sprzedaz/mieszkanie/warszawa/"
+        districts = ["zoliborz"]
+        self.data_json = self.get_json(base_url + relative_url + districts[0])
+        # pages = json_object["data"]["searchAds"]["pagination"]["totalPages"]
+        pages = 1
+        offers_urls = []
+        for i in tqdm(range(1, pages + 1)):
+            url = base_url + relative_url + districts[0] + "?page=" + str(i)
+            page_json = self.get_json(url)
+            for item in page_json["data"]["searchAds"]["items"]:
+                offers_urls.append(base_url + 'oferta/' + item["slug"])
+
+        return offers_urls
+
+
+class WebScraper(JSONUser):
+
+    def __init__(self, url):
+        super().__init__(url)
+
+    def get_images(self):
+        """
+        Return list of links to images of offers
+
+        :param url: list of offers urls
+        :return: list of links to images
+        """
+
+        images_urls = []
+        images = self.data_json["ad"]["images"]
+        for image in images:
+            images_urls.append(image["large"])
+
+        return images_urls
+
+    def get_description(self):
+        soup = BeautifulSoup(self.data_json["ad"]["description"], "lxml")
+        description = soup.get_text(separator=' ')
+        return description
+
+    def get_characteristics(self):
+        characteristics_json = self.data_json["ad"]["characteristics"]
+        return json.dumps(characteristics_json, indent=4)      # TODO change to dict label: localizedValue
+
+    def get_date_created(self):
+        date_created = self.data_json["ad"]["dateCreated"]
+        return date_created
+
+    def get_date_modified(self):
+        date_modified = self.data_json["ad"]["dateModified"]
+        return date_modified
+
+    def get_features(self):
+        features_json = self.data_json["ad"]["featuresByCategory"]
+        return json.dumps(features_json, indent=4)
+
+    def get_location(self):
+        location_json = self.data_json["ad"]["location"]
+        return json.dumps(location_json, indent=4)
+
+    def get_statistics(self):
+        statistics_json = self.data_json["ad"]["statistics"]
+        return json.dumps(statistics_json, indent=4)
 
 
 if __name__ == "__main__":
-    links_list = get_links()
-    # get_images(links_list)
-    # get_descriptions(links_list)
-    get_details(links_list)
+    sauce = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
+    webscraper = WebScraper(sauce)
+    print(webscraper.get_images())
+    print(webscraper.get_description())
+    print(webscraper.get_characteristics())
+    print(webscraper.get_date_created())
+    print(webscraper.get_date_modified())
+    print(webscraper.get_features())
+    print(webscraper.get_location())
+    print(webscraper.get_statistics())
