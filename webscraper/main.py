@@ -4,16 +4,7 @@ import json
 from tqdm import tqdm
 
 
-# TODO make a get method for each of tags. Maybe covert to class? Change get_details
-
-
-base_url = "https://www.otodom.pl/pl/"
-
-tags_of_interest = ["characteristics", "dateCreated", "dateModified",
-                    "description", "featuresByCategory", "location", "statistics"]
-
-
-class JSONUser:     # TODO change the name, this one is bad
+class JSONUser:  # TODO change the name, this one is bad
 
     def __init__(self, url):
         self.data_json = self.get_json(url)
@@ -33,22 +24,22 @@ class JSONUser:     # TODO change the name, this one is bad
         return self.data_json["props"]["pageProps"]
 
 
+# TODO add methods that gather data such as total number of offers per district
+# TODO parallelize
 class WebCrawler(JSONUser):
     def __init__(self, url):
         super().__init__(url)
+        self.base_url = url
 
-    def get_links(self):    # TODO modify to accept input urls, districts and such
-        relative_url = "oferty/sprzedaz/mieszkanie/warszawa/"
-        districts = ["zoliborz"]
-        self.data_json = self.get_json(base_url + relative_url + districts[0])
-        # pages = json_object["data"]["searchAds"]["pagination"]["totalPages"]
-        pages = 1
+    def get_links(self):  # TODO modify to accept input urls, districts and such
+        number_of_pages = self.data_json["data"]["searchAds"]["pagination"]["totalPages"]
         offers_urls = []
-        for i in tqdm(range(1, pages + 1)):
-            url = base_url + relative_url + districts[0] + "?page=" + str(i)
+        for i in tqdm(range(1, number_of_pages + 1)):
+            url = self.base_url + "?page=" + str(i)
             page_json = self.get_json(url)
             for item in page_json["data"]["searchAds"]["items"]:
-                offers_urls.append(base_url + 'oferta/' + item["slug"])
+                # TODO has to be changed to something less specific/extract url from input
+                offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
 
         return offers_urls
 
@@ -80,7 +71,7 @@ class WebScraper(JSONUser):
 
     def get_characteristics(self):
         characteristics_json = self.data_json["ad"]["characteristics"]
-        return json.dumps(characteristics_json, indent=4)      # TODO change to dict label: localizedValue
+        return json.dumps(characteristics_json, indent=4)  # TODO change to dict label: localizedValue
 
     def get_date_created(self):
         date_created = self.data_json["ad"]["dateCreated"]
@@ -102,10 +93,20 @@ class WebScraper(JSONUser):
         statistics_json = self.data_json["ad"]["statistics"]
         return json.dumps(statistics_json, indent=4)
 
+    def get_all_data(self):
+        self.get_images()
+        self.get_description()
+        self.get_date_created()
+        self.get_date_modified()
+        self.get_features()
+        self.get_location()
+        self.get_statistics()
+
 
 if __name__ == "__main__":
-    sauce = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
-    webscraper = WebScraper(sauce)
+    crawler_source = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/warszawa/zoliborz"
+    scraper_source = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
+    webscraper = WebScraper(scraper_source)
     print(webscraper.get_images())
     print(webscraper.get_description())
     print(webscraper.get_characteristics())
@@ -114,3 +115,7 @@ if __name__ == "__main__":
     print(webscraper.get_features())
     print(webscraper.get_location())
     print(webscraper.get_statistics())
+    webcrawler = WebCrawler(crawler_source)
+    crawled_links = webcrawler.get_links()
+    print(crawled_links)
+    print(len(crawled_links))
