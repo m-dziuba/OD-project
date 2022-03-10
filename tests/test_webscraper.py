@@ -2,7 +2,7 @@ import datetime
 import json
 from pytest import mark
 from pytest import fixture
-from webscraping import WebScraper
+from data import WebScraper
 
 
 source = 'https://www.otodom.pl/pl/oferta/luksusowy-apartament' \
