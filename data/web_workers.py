@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import json
 from tqdm import tqdm
+from mpi4py import MPI
 
 
 class JSONUser:  # TODO change the name, this one is bad
@@ -13,13 +14,17 @@ class JSONUser:  # TODO change the name, this one is bad
         :param url: a string containing url
         :return: json object
         """
+        while True:
+            try:
+                source = requests.get(url).content
+                soup = BeautifulSoup(source, "lxml")
+                json_string = soup.find("script", id="__NEXT_DATA__")
+                data_json = json.loads(json_string.text)
 
-        source = requests.get(url).content
-        soup = BeautifulSoup(source, "lxml")
-        json_string = soup.find("script", id="__NEXT_DATA__")
-        data_json = json.loads(json_string.text)
-
-        return data_json["props"]["pageProps"]
+                return data_json["props"]["pageProps"]
+            except AttributeError:
+                print("Error")
+                continue
 
 
 # TODO parallelize
@@ -50,9 +55,28 @@ class WebCrawler(JSONUser):
             self.offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
 
     def get_offer_urls_from_all_pages(self):
-        self.get_pages_urls()
-        for page in tqdm(self.pages_to_visit):
+
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+
+        my_list = []
+
+        if rank == 0:
+            self.get_pages_urls()
+            chunk = len(self.pages_to_visit) // size
+            for i in range(size):
+                my_list.append(self.pages_to_visit[i * chunk: (i + 1) * chunk])
+
+        my_list = comm.scatter(my_list, root=0)
+
+        for page in tqdm(my_list):
             self.get_offer_urls_from_page(page)
+
+        comm.gather(my_list, root=0)
+
+        print(self.offers_urls)
+        print(rank, "finished")
 
 
 class WebScraper(JSONUser):
