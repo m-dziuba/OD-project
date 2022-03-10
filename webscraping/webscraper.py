@@ -107,15 +107,5 @@ if __name__ == "__main__":
     crawler_source = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/warszawa/zoliborz"
     scraper_source = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
     webscraper = WebScraper(scraper_source)
-    print(webscraper.get_images())
-    print(webscraper.get_description())
-    print(webscraper.get_characteristics())
-    print(webscraper.get_date_created())
-    print(webscraper.get_date_modified())
-    print(webscraper.get_features())
-    print(webscraper.get_location())
-    print(webscraper.get_statistics())
     webcrawler = WebCrawler(crawler_source)
     crawled_links = webcrawler.get_links()
-    print(crawled_links)
-    print(len(crawled_links))
