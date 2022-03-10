@@ -27,10 +27,8 @@ class TestWebScraper:
         expected_tags = ["images", "description", "dateCreated", "dateModified",
                          "featuresByCategory", "location", "statistics"]
 
-        assert "ad" in self.webscraper.data_json
-
         for tag in expected_tags:
-            assert tag in self.webscraper.data_json["ad"]
+            assert tag in self.webscraper.data_json
 
     def test_get_description(self):
         expected_type = str
