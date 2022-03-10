@@ -24,27 +24,35 @@ class JSONUser:  # TODO change the name, this one is bad
 
 # TODO parallelize
 class WebCrawler(JSONUser):
-    def __init__(self, url):
-        self.data_json = self.get_json(url)["data"]
-        self.base_url = url
+    def __init__(self, base_url, cities, districts):
+        self.cities = cities
+        self.districts = districts
+        self.base_url = base_url
+        self.pages_to_visit = []
+        self.offers_urls = []
 
-    def get_total_pages(self):
-        return self.data_json["data"]["searchAds"]["pagination"]["totalPages"]
+    # def get_total_number_of_offers(self):
+    #     return self.data_json["pagination"]["totalResults"]
 
-    def get_total_offers(self):
-        return self.data_json["data"]["searchAds"]["pagination"]["totalResults"]
+    def get_pages_urls(self):
+        for city in self.cities:
+            for district in self.districts:
+                district_url = f"{self.base_url}/{city}/{district}"
+                district_data_json = self.get_json(district_url)["data"]["searchAds"]
+                districts_total_number_of_pages = district_data_json["pagination"]["totalPages"]
+                for i in tqdm(range(1, districts_total_number_of_pages + 1)):
+                    self.pages_to_visit.append(f"{district_url}?page={i}")
 
-    def get_links(self):  # TODO modify to accept input urls, districts and such
-        number_of_pages = self.data_json["data"]["searchAds"]["pagination"]["totalPages"]
-        offers_urls = []
-        for i in tqdm(range(1, number_of_pages + 1)):
-            url = self.base_url + "?page=" + str(i)
-            page_json = self.get_json(url)
-            for item in page_json["data"]["searchAds"]["items"]:
-                # TODO has to be changed to something less specific/extract url from input
-                offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
+    def get_offer_urls_from_page(self, pages_url):
+        current_page_json = self.get_json(pages_url)["data"]["searchAds"]
+        for item in current_page_json["items"]:
+            # TODO has to be changed to something less specific/extract url from input
+            self.offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
 
-        return offers_urls
+    def get_offer_urls_from_all_pages(self):
+        self.get_pages_urls()
+        for page in tqdm(self.pages_to_visit):
+            self.get_offer_urls_from_page(page)
 
 
 class WebScraper(JSONUser):
@@ -54,10 +62,9 @@ class WebScraper(JSONUser):
 
     def get_images(self):
         """
-        Return list of links to images of offers
+        Return list of urls of images of an offer
 
-        :param url: list of offers urls
-        :return: list of links to images
+        :return: list of urls of images
         """
 
         images_urls = []
@@ -127,8 +134,11 @@ if __name__ == "__main__":
     # scraper_source = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
     # webscraper = WebScraper(scraper_source)
     # webscraper.get_location()
-    cities = ["warszawa"]
-    districts = ["zoliborz", "mokotow"]
-    crawler_source = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/warszawa/zoliborz"
-    webcrawler = WebCrawler(crawler_source)
-    crawled_links = webcrawler.get_links()
+    crawler_cities = ["warszawa"]
+    crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
+    crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
+    webcrawler = WebCrawler(crawler_base_url, crawler_cities, crawler_districts)
+    # crawled_links = webcrawler.get_links()
+    # print(crawled_links)
+    # print(len(crawled_links) == webcrawler.get_total_number_of_offers())
+    webcrawler.get_offer_urls_from_all_pages()
