@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 
 class JSONUser:  # TODO change the name, this one is bad
-
+    """Interface for classes that obtain json from otodom website"""
     def __init__(self, url):
         self.data_json = self.get_json(url)
 
@@ -71,7 +71,9 @@ class WebScraper(JSONUser):
 
     def get_characteristics(self):
         characteristics_json = self.data_json["ad"]["characteristics"]
-        return json.dumps(characteristics_json, indent=4)  # TODO change to dict label: localizedValue
+        characteristics = {char["label"].lower(): char["localizedValue"].lower()
+                           for char in characteristics_json}
+        return characteristics
 
     def get_date_created(self):
         date_created = self.data_json["ad"]["dateCreated"]
@@ -83,15 +85,30 @@ class WebScraper(JSONUser):
 
     def get_features(self):
         features_json = self.data_json["ad"]["featuresByCategory"]
-        return json.dumps(features_json, indent=4)
+        features = {feature["label"].lower(): feature["values"]
+                    for feature in features_json}
+        return features
 
     def get_location(self):
         location_json = self.data_json["ad"]["location"]
-        return json.dumps(location_json, indent=4)
+        location = {
+            "address": location_json["address"][0]["value"],
+            "coordinates": {
+                "latitude": location_json["coordinates"]["latitude"],
+                "longitude": location_json["coordinates"]["longitude"],
+            },
+            "geo_levels": {
+                geo_level["type"]: geo_level["label"]
+                for geo_level in location_json['geoLevels']
+            },
+        }
 
-    def get_statistics(self):
-        statistics_json = self.data_json["ad"]["statistics"]
-        return json.dumps(statistics_json, indent=4)
+        return location
+
+    # TODO try to figure out what those "statistics" actually are
+    # def get_statistics(self):
+    #     statistics_json = self.data_json["ad"]["statistics"]
+    #     return json.dumps(statistics_json, indent=4)
 
     def get_all_data(self):
         self.get_images()
@@ -100,12 +117,12 @@ class WebScraper(JSONUser):
         self.get_date_modified()
         self.get_features()
         self.get_location()
-        self.get_statistics()
 
 
 if __name__ == "__main__":
     crawler_source = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie/warszawa/zoliborz"
     scraper_source = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
     webscraper = WebScraper(scraper_source)
-    webcrawler = WebCrawler(crawler_source)
-    crawled_links = webcrawler.get_links()
+    webscraper.get_location()
+    # webcrawler = WebCrawler(crawler_source)
+    # crawled_links = webcrawler.get_links()
