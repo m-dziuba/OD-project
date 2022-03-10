@@ -1,1 +1,1 @@
-from .webscraper import WebScraper
+from .web_workers import WebScraper
