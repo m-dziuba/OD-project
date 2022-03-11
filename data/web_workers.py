@@ -3,9 +3,11 @@ import requests
 import json
 from tqdm import tqdm
 from mpi4py import MPI
+from collections import deque
+import csv
 
 
-class JSONUser:  # TODO change the name, this one is bad
+class JSONUser:
     """Interface for classes that obtain json from otodom website"""
     @staticmethod
     def get_json(url):
@@ -27,13 +29,13 @@ class JSONUser:  # TODO change the name, this one is bad
                 continue
 
 
-# TODO parallelize
-class WebCrawler(JSONUser):
+# TODO make more readable
+class URLCollector(JSONUser):
     def __init__(self, base_url, cities, districts):
         self.cities = cities
         self.districts = districts
         self.base_url = base_url
-        self.pages_to_visit = []
+        self.pages_to_visit = deque()
         self.offers_urls = []
 
     # def get_total_number_of_offers(self):
@@ -49,37 +51,43 @@ class WebCrawler(JSONUser):
                     self.pages_to_visit.append(f"{district_url}?page={i}")
 
     def get_offer_urls_from_page(self, pages_url):
-        current_page_json = self.get_json(pages_url)["data"]["searchAds"]
-        for item in current_page_json["items"]:
+        page_json = self.get_json(pages_url)["data"]["searchAds"]
+        for item in page_json["items"]:
             # TODO has to be changed to something less specific/extract url from input
             self.offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
 
     def get_offer_urls_from_all_pages(self):
-
         comm = MPI.COMM_WORLD
         size = comm.Get_size()
         rank = comm.Get_rank()
 
-        my_list = []
-
         if rank == 0:
+            urls = [[] for _ in range(size)]
             self.get_pages_urls()
-            chunk = len(self.pages_to_visit) // size
-            for i in range(size):
-                my_list.append(self.pages_to_visit[i * chunk: (i + 1) * chunk])
 
-        my_list = comm.scatter(my_list, root=0)
+            i = 0
+            while self.pages_to_visit:
+                urls[i].append(self.pages_to_visit.pop())
+                i = i + 1 if i < size - 1 else 0
 
-        for page in tqdm(my_list):
+        else:
+            urls = []
+
+        urls = comm.scatter(urls, root=0)
+
+        for page in tqdm(urls):
             self.get_offer_urls_from_page(page)
 
-        comm.gather(my_list, root=0)
+        self.offers_urls = comm.gather(self.offers_urls, root=0)
+        if rank == 0:
+            with open("tests/test.csv", 'w') as csv_file:
+                csv_writer = csv.writer(csv_file, delimiter=' ')
+                for chunk in self.offers_urls:
+                    for offer_url in chunk:
+                        csv_writer.writerow([offer_url])
 
-        print(self.offers_urls)
-        print(rank, "finished")
 
-
-class WebScraper(JSONUser):
+class DataExtractor(JSONUser):
 
     def __init__(self, url):
         self.data_json = self.get_json(url)["ad"]
@@ -155,14 +163,8 @@ class WebScraper(JSONUser):
 
 
 if __name__ == "__main__":
-    # scraper_source = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
-    # webscraper = WebScraper(scraper_source)
-    # webscraper.get_location()
     crawler_cities = ["warszawa"]
     crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
     crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
-    webcrawler = WebCrawler(crawler_base_url, crawler_cities, crawler_districts)
-    # crawled_links = webcrawler.get_links()
-    # print(crawled_links)
-    # print(len(crawled_links) == webcrawler.get_total_number_of_offers())
+    webcrawler = UrlCollector(crawler_base_url, crawler_cities, crawler_districts)
     webcrawler.get_offer_urls_from_all_pages()
