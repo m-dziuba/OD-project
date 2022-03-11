@@ -1,5 +1,6 @@
 import datetime
 import requests
+import csv
 from pytest import mark
 from pytest import fixture
 from data import DataExtractor
@@ -112,6 +113,7 @@ class TestDataExtractor:
     #     assert True
 
 
+# TODO redo after URLCollector is improved
 class TestUrlCollector:
 
     @fixture(autouse=True)
@@ -121,9 +123,29 @@ class TestUrlCollector:
     # TODO this is quite slow...
     def test_get_pages_urls(self):
         self.url_collector.get_pages_urls()
-        while self.url_collector.pages_to_visit:
+
+        for _ in range(5):
             try:
                 requests.head(self.url_collector.pages_to_visit.pop())
             except requests.HTTPError:
                 assert False
         assert True
+
+    def test_get_offer_urls_from_pages(self):
+        url = self.url_collector.pages_to_visit.pop()
+        self.url_collector.get_offer_urls_from_page(url)
+
+        for i in range(5):
+            try:
+                requests.head(self.url_collector.offers_urls[i])
+            except requests.HTTPError:
+                assert False
+        assert True
+
+    def test_get_offer_urls_from_all_pages(self):
+        with open("tests/test.csv") as csvfile:
+            csv_reader = csv.reader(csvfile)
+            for _ in range(5):
+                url = csv_reader.__next__()[0]
+                requests.head(url)
+

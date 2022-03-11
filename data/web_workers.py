@@ -7,7 +7,7 @@ from collections import deque
 import csv
 
 
-class JSONUser:  # TODO change the name, this one is bad
+class JSONUser:
     """Interface for classes that obtain json from otodom website"""
     @staticmethod
     def get_json(url):
@@ -29,8 +29,8 @@ class JSONUser:  # TODO change the name, this one is bad
                 continue
 
 
-# TODO parallelize
-class UrlCollector(JSONUser):
+# TODO make more readable
+class URLCollector(JSONUser):
     def __init__(self, base_url, cities, districts):
         self.cities = cities
         self.districts = districts
@@ -51,8 +51,8 @@ class UrlCollector(JSONUser):
                     self.pages_to_visit.append(f"{district_url}?page={i}")
 
     def get_offer_urls_from_page(self, pages_url):
-        current_page_json = self.get_json(pages_url)["data"]["searchAds"]
-        for item in current_page_json["items"]:
+        page_json = self.get_json(pages_url)["data"]["searchAds"]
+        for item in page_json["items"]:
             # TODO has to be changed to something less specific/extract url from input
             self.offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
 
@@ -80,7 +80,7 @@ class UrlCollector(JSONUser):
 
         self.offers_urls = comm.gather(self.offers_urls, root=0)
         if rank == 0:
-            with open("data/test.csv", 'w') as csv_file:
+            with open("tests/test.csv", 'w') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=' ')
                 for chunk in self.offers_urls:
                     for offer_url in chunk:
