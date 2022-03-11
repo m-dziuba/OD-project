@@ -1,3 +1,5 @@
+from typing import List
+
 from bs4 import BeautifulSoup
 import requests
 import json
@@ -88,16 +90,16 @@ class URLCollector(JSONUser):
 
 
 class DataExtractor(JSONUser):
+    """Used to extract data from a single offer"""
 
     def __init__(self, url):
         self.data_json = self.get_json(url)["ad"]
 
-    def get_images(self):
-        """
-        Return list of urls of images of an offer
+    def set_data_json(self, url):
+        self.data_json = self.get_json(url)["ad"]
 
-        :return: list of urls of images
-        """
+    def get_images(self) -> List[str]:
+        """Return a list of strings containing urls of images of an offer"""
 
         images_urls = []
         images = self.data_json["ad"]["images"]
@@ -106,32 +108,44 @@ class DataExtractor(JSONUser):
 
         return images_urls
 
-    def get_description(self):
+    def get_description(self) -> str:
+        """Return a string containing description of the offer"""
         soup = BeautifulSoup(self.data_json["description"], "lxml")
         description = soup.get_text(separator=' ')
         return description
 
-    def get_characteristics(self):
+    def get_characteristics(self) -> dict:
+        """Return a dict containing characteristics of the offer"""
         characteristics_json = self.data_json["characteristics"]
         characteristics = {char["label"].lower(): char["localizedValue"].lower()
                            for char in characteristics_json}
         return characteristics
 
-    def get_date_created(self):
+    def get_date_created(self) -> str:
+        """
+        Return datetime in %Y-%m-%d %H:%M:%S format of when the offer
+        was created
+        """
         date_created = self.data_json["dateCreated"]
         return date_created
 
-    def get_date_modified(self):
+    def get_date_modified(self) -> str:
+        """
+        Return datetime string in %Y-%m-%d %H:%M:%S format of when the offer
+        was modified
+        """
         date_modified = self.data_json["dateModified"]
         return date_modified
 
-    def get_features(self):
+    def get_features(self) -> dict:
+        """Return a dict containing features of the offer"""
         features_json = self.data_json["featuresByCategory"]
         features = {feature["label"].lower(): feature["values"]
                     for feature in features_json}
         return features
 
-    def get_location(self):
+    def get_location(self) -> dict:
+        """Return a dict containing location specifications of the offer"""
         location_json = self.data_json["location"]
         location = {
             "address": location_json["address"][0]["value"],
