@@ -4,7 +4,7 @@ import csv
 from pytest import mark
 from pytest import fixture
 from data import DataExtractor
-from data import UrlCollector
+from data import URLCollector
 
 
 source = 'https://www.otodom.pl/pl/oferta/luksusowy-apartament' \
@@ -22,7 +22,7 @@ def data_extractor():
 
 @fixture(scope="class")
 def url_collector():
-    return UrlCollector(base_url, cities, districts)
+    return URLCollector(base_url, cities, districts)
 
 
 @mark.data

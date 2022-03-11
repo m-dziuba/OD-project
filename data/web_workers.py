@@ -166,5 +166,5 @@ if __name__ == "__main__":
     crawler_cities = ["warszawa"]
     crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
     crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
-    webcrawler = UrlCollector(crawler_base_url, crawler_cities, crawler_districts)
+    webcrawler = URLCollector(crawler_base_url, crawler_cities, crawler_districts)
     webcrawler.get_offer_urls_from_all_pages()
