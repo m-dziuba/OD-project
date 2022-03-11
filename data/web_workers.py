@@ -42,7 +42,6 @@ class UrlCollector(JSONUser):
     #     return self.data_json["pagination"]["totalResults"]
 
     def get_pages_urls(self):
-
         for city in self.cities:
             for district in self.districts:
                 district_url = f"{self.base_url}/{city}/{district}"
@@ -164,15 +163,8 @@ class DataExtractor(JSONUser):
 
 
 if __name__ == "__main__":
-    # scraper_source = "https://www.otodom.pl/pl/oferta/ustawne-dwupokojowe-mieszkanie-na-zoliborzu-ID4fKC3"
-    # webscraper = WebScraper(scraper_source)
-    # webscraper.get_location()
     crawler_cities = ["warszawa"]
     crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
-    # crawler_districts = ["zoliborz"]
     crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
     webcrawler = UrlCollector(crawler_base_url, crawler_cities, crawler_districts)
-    # crawled_links = webcrawler.get_links()
-    # print(crawled_links)
-    # print(len(crawled_links) == webcrawler.get_total_number_of_offers())
     webcrawler.get_offer_urls_from_all_pages()
