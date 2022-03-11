@@ -2,7 +2,7 @@ import datetime
 import json
 from pytest import mark
 from pytest import fixture
-from data import WebScraper
+from data import DataExtractor
 
 
 source = 'https://www.otodom.pl/pl/oferta/luksusowy-apartament' \
@@ -11,7 +11,7 @@ source = 'https://www.otodom.pl/pl/oferta/luksusowy-apartament' \
 
 @fixture(scope="class")
 def webscraper():
-    return WebScraper(source)
+    return DataExtractor(source)
 
 
 class TestWebScraper:

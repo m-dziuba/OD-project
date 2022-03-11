@@ -1,1 +1,1 @@
-from .web_workers import WebScraper
+from .web_workers import DataExtractor

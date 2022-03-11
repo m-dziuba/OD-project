@@ -30,7 +30,7 @@ class JSONUser:  # TODO change the name, this one is bad
 
 
 # TODO parallelize
-class WebCrawler(JSONUser):
+class UrlCollector(JSONUser):
     def __init__(self, base_url, cities, districts):
         self.cities = cities
         self.districts = districts
@@ -88,7 +88,7 @@ class WebCrawler(JSONUser):
                         csv_writer.writerow([offer_url])
 
 
-class WebScraper(JSONUser):
+class DataExtractor(JSONUser):
 
     def __init__(self, url):
         self.data_json = self.get_json(url)["ad"]
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
     # crawler_districts = ["zoliborz"]
     crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
-    webcrawler = WebCrawler(crawler_base_url, crawler_cities, crawler_districts)
+    webcrawler = UrlCollector(crawler_base_url, crawler_cities, crawler_districts)
     # crawled_links = webcrawler.get_links()
     # print(crawled_links)
     # print(len(crawled_links) == webcrawler.get_total_number_of_offers())
