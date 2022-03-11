@@ -169,3 +169,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+/data/parallel_run_script.sh
