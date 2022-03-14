@@ -37,26 +37,28 @@ class URLCollector(JSONUser):
         self.cities = cities
         self.districts = districts
         self.base_url = base_url
-        self.pages_to_visit = deque()
+        self.paginated_listings_urls = deque()
         self.offers_urls = []
 
-    # def get_total_number_of_offers(self):
-    #     return self.data_json["pagination"]["totalResults"]
+    @staticmethod
+    def get_total_number_of_offers(data_json):
+        return data_json["pagination"]["totalPages"]
 
     def get_pages_urls(self):
         for city in self.cities:
             for district in self.districts:
-                district_url = f"{self.base_url}/{city}/{district}"
-                district_data_json = self.get_json(district_url)["data"]["searchAds"]
-                districts_total_number_of_pages = district_data_json["pagination"]["totalPages"]
-                for i in tqdm(range(1, districts_total_number_of_pages + 1)):
-                    self.pages_to_visit.append(f"{district_url}?page={i}")
+                url = f"{self.base_url}/{city}/{district}"
+                data_json = self.get_json(url)["data"]["searchAds"]
+                total_number_of_pages = self.get_total_number_of_offers(data_json)
+                for i in tqdm(range(total_number_of_pages)):
+                    self.paginated_listings_urls.append(f"{url}?page={i + 1}")
 
     def get_offer_urls_from_page(self, pages_url):
         page_json = self.get_json(pages_url)["data"]["searchAds"]
         for item in page_json["items"]:
             # TODO has to be changed to something less specific/extract url from input
-            self.offers_urls.append("https://www.otodom.pl/pl/oferta/" + item["slug"])
+            self.offers_urls.append("https://www.otodom.pl/pl/oferta/"
+                                    + item["slug"])
 
     def get_offer_urls_from_all_pages(self):
         comm = MPI.COMM_WORLD
@@ -68,10 +70,9 @@ class URLCollector(JSONUser):
             self.get_pages_urls()
 
             i = 0
-            while self.pages_to_visit:
-                urls[i].append(self.pages_to_visit.pop())
+            while self.paginated_listings_urls:
+                urls[i].append(self.paginated_listings_urls.pop())
                 i = i + 1 if i < size - 1 else 0
-
         else:
             urls = []
 
