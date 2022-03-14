@@ -40,31 +40,22 @@ class URLCollector(JSONUser):
         self.paginated_listings_urls = deque()
         self.offers_urls = []
 
-    @staticmethod
-    def get_total_number_of_offers(data_json):
-        return data_json["pagination"]["totalPages"]
-
-    def get_pages_urls(self):
-        for city in self.cities:
-            for district in self.districts:
-                url = f"{self.base_url}/{city}/{district}"
-                data_json = self.get_json(url)["data"]["searchAds"]
-                total_number_of_pages = self.get_total_number_of_offers(data_json)
-                for i in tqdm(range(total_number_of_pages)):
-                    self.paginated_listings_urls.append(f"{url}?page={i + 1}")
-
-    def get_offer_urls_from_page(self, pages_url):
-        page_json = self.get_json(pages_url)["data"]["searchAds"]
-        for item in page_json["items"]:
-            # TODO has to be changed to something less specific/extract url from input
-            self.offers_urls.append("https://www.otodom.pl/pl/oferta/"
-                                    + item["slug"])
-
     def get_offer_urls_from_all_pages(self):
         comm = MPI.COMM_WORLD
         size = comm.Get_size()
         rank = comm.Get_rank()
 
+        urls = self.split_urls_between_processes(rank, size)
+        urls = comm.scatter(urls, root=0)
+
+        for page in tqdm(urls):
+            self.get_offer_urls_from_page(page)
+
+        self.offers_urls = comm.gather(self.offers_urls, root=0)
+        if rank == 0:
+            self.save_urls_to_csv()
+
+    def split_urls_between_processes(self, rank, size):
         if rank == 0:
             urls = [[] for _ in range(size)]
             self.get_pages_urls()
@@ -75,19 +66,34 @@ class URLCollector(JSONUser):
                 i = i + 1 if i < size - 1 else 0
         else:
             urls = []
+        return urls
 
-        urls = comm.scatter(urls, root=0)
+    def get_offer_urls_from_page(self, pages_url):
+        page_json = self.get_json(pages_url)["data"]["searchAds"]
+        for item in page_json["items"]:
+            # TODO has to be changed to something less specific/extract url from input
+            self.offers_urls.append("https://www.otodom.pl/pl/oferta/"
+                                    + item["slug"])
 
-        for page in tqdm(urls):
-            self.get_offer_urls_from_page(page)
+    def get_pages_urls(self):
+        for city in self.cities:
+            for district in self.districts:
+                url = f"{self.base_url}/{city}/{district}"
+                data_json = self.get_json(url)["data"]["searchAds"]
+                total_number_of_pages = self.get_total_number_of_offers(data_json)
+                for i in tqdm(range(total_number_of_pages)):
+                    self.paginated_listings_urls.append(f"{url}?page={i + 1}")
 
-        self.offers_urls = comm.gather(self.offers_urls, root=0)
-        if rank == 0:
-            with open("tests/test.csv", 'w') as csv_file:
-                csv_writer = csv.writer(csv_file, delimiter=' ')
-                for chunk in self.offers_urls:
-                    for offer_url in chunk:
-                        csv_writer.writerow([offer_url])
+    def save_urls_to_csv(self):
+        with open("tests/test.csv", 'w') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=' ')
+            for chunk in self.offers_urls:
+                for offer_url in chunk:
+                    csv_writer.writerow([offer_url])
+
+    @staticmethod
+    def get_total_number_of_offers(data_json):
+        return data_json["pagination"]["totalPages"]
 
 
 class DataExtractor(JSONUser):
