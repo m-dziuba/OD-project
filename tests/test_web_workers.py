@@ -126,13 +126,13 @@ class TestUrlCollector:
 
         for _ in range(5):
             try:
-                requests.head(self.url_collector.pages_to_visit.pop())
+                requests.head(self.url_collector.paginated_listings_urls.pop())
             except requests.HTTPError:
                 assert False
         assert True
 
     def test_get_offer_urls_from_pages(self):
-        url = self.url_collector.pages_to_visit.pop()
+        url = self.url_collector.paginated_listings_urls.pop()
         self.url_collector.get_offer_urls_from_page(url)
 
         for i in range(5):
