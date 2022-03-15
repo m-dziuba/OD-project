@@ -3,10 +3,11 @@ from typing import List
 from bs4 import BeautifulSoup
 import requests
 import json
-from tqdm import tqdm
 from mpi4py import MPI
 from collections import deque
+# Temporary imports
 import csv
+from tqdm import tqdm
 
 
 class JSONUser:
@@ -100,7 +101,8 @@ class DataExtractor(JSONUser):
     """Used to extract data from a single offer"""
 
     def __init__(self, url):
-        self.data_json = self.get_json(url)["ad"]
+        self.data_json = None
+        self.set_data_json(url)
 
     def set_data_json(self, url):
         self.data_json = self.get_json(url)["ad"]

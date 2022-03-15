@@ -90,9 +90,10 @@ class TestDataExtractor:
                 "longitude": float,
             },
             "geo_levels": {
+                "city": str,
+                "district": str,
                 "region": str,
                 "sub-region": str,
-                "city": str,
             },
         }
         assert isinstance(obtained_data, expected_type)
