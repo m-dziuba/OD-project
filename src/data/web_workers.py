@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Deque, Dict, TypedDict, Any
 from bs4 import BeautifulSoup
 import requests
 import json
@@ -7,6 +7,16 @@ from collections import deque
 # Temporary imports
 import csv
 from tqdm import tqdm
+
+
+# Custom Types
+JsonDict = Dict[str, Any]
+
+
+class LocationDict(TypedDict):
+    address: str
+    coordinates: Dict[str, str]
+    geo_levels: Dict[str, str]
 
 
 class JSONUser:
@@ -33,12 +43,12 @@ class JSONUser:
 
 # TODO make more readable
 class URLCollector(JSONUser):
-    def __init__(self, base_url, cities, districts):
+    def __init__(self, base_url: str, cities: List[str], districts: List[str]):
+        self.base_url = base_url
         self.cities = cities
         self.districts = districts
-        self.base_url = base_url
-        self.paginated_listings_urls = deque()
-        self.offers_urls = []
+        self.paginated_listings_urls: Deque[str] = deque()
+        self.offers_urls: List[str] = []
 
     def get_offer_urls_from_all_pages(self):
         comm = MPI.COMM_WORLD
@@ -57,7 +67,7 @@ class URLCollector(JSONUser):
 
     def split_urls_between_processes(self, rank, size):
         if rank == 0:
-            urls = [[] for _ in range(size)]
+            urls: List[List[str]] = [[] for _ in range(size)]
             self.get_pages_urls()
 
             i = 0
@@ -100,7 +110,7 @@ class DataExtractor(JSONUser):
     """Used to extract data from a single offer"""
 
     def __init__(self, url):
-        self.data_json = None
+        self.data_json: JsonDict = {}
         self.set_data_json(url)
 
     def set_data_json(self, url):
@@ -119,10 +129,10 @@ class DataExtractor(JSONUser):
     def get_description(self) -> str:
         """Return a string containing description of the offer"""
         soup = BeautifulSoup(self.data_json["description"], "lxml")
-        description = soup.get_text(separator=' ')
+        description: str = soup.get_text(separator=' ')
         return description
 
-    def get_characteristics(self) -> dict:
+    def get_characteristics(self) -> Dict[str, str]:
         """Return a dict containing characteristics of the offer"""
         characteristics_json = self.data_json["characteristics"]
         characteristics = {char["label"].lower(): char["localizedValue"].lower()
@@ -134,7 +144,7 @@ class DataExtractor(JSONUser):
         Return datetime in %Y-%m-%d %H:%M:%S format of when the offer
         was created
         """
-        date_created = self.data_json["dateCreated"]
+        date_created: str = self.data_json["dateCreated"]
         return date_created
 
     def get_date_modified(self) -> str:
@@ -142,20 +152,20 @@ class DataExtractor(JSONUser):
         Return datetime string in %Y-%m-%d %H:%M:%S format of when the offer
         was modified
         """
-        date_modified = self.data_json["dateModified"]
+        date_modified: str = self.data_json["dateModified"]
         return date_modified
 
-    def get_features(self) -> dict:
+    def get_features(self) -> Dict[str, List[str]]:
         """Return a dict containing features of the offer"""
         features_json = self.data_json["featuresByCategory"]
         features = {feature["label"].lower(): feature["values"]
                     for feature in features_json}
         return features
 
-    def get_location(self) -> dict:
+    def get_location(self) -> LocationDict:
         """Return a dict containing location specifications of the offer"""
         location_json = self.data_json["location"]
-        location = {
+        location: LocationDict = {
             "address": location_json["address"][0]["value"],
             "coordinates": {
                 "latitude": location_json["coordinates"]["latitude"],
