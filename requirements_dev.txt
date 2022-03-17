@@ -4,7 +4,6 @@ pytest~=7.1.0
 pytest-cov==3.0.0
 mypy==0.941
 tox-conda==0.9.2
-typed-ast==1.5.2
 types-requests==2.27.13
 types-urllib3==1.26.11
 typing_extensions==3.10.0.2
