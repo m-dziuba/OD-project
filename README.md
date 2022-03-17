@@ -1,3 +1,4 @@
+![Tests](https://github.com/m-dziuba/OD-project/actions/workflows/tests.yml/badge.svg)
 # Idea behind the project
 For quite some time I have been searching for an affordable apartment in Warsaw.
 Even though I cannot currently afford one I'm still invested in the market because I dream
