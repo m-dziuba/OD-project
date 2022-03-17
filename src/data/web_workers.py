@@ -185,6 +185,7 @@ class DataExtractor(JSONUser):
 
 
 if __name__ == "__main__":
+    # testing
     crawler_cities = ["warszawa"]
     crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
     crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
