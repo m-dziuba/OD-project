@@ -28,7 +28,7 @@ divides it into three main types:
 - Labeled data is used to train three separate models for each type of data
 - Final model joins the predictions of previous models and gives some kind of output(tbd).  
 
-![Basic structure sketch](./images/sctucture_sketch.jpeg)
+![Basic structure sketch](readme_images/sctucture_sketch.jpeg)
 # Later improvements
 I have some ideas for improvements in the future after I get it all to work. One of them
 is to run the webscraper and the database on a RaspberryPi. The webscraper could search for new
@@ -49,4 +49,4 @@ and add a web GUI, that I could access from my local network.
 # SQL Schema
 Schema for now will look like this. I'm not too happy with some parts of it but
 I want to implement it for now and see how it works.
-![Initial Schema](./images/initial_schema.png)
+![Initial Schema](readme_images/initial_schema.png)
