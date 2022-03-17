@@ -143,10 +143,10 @@ class TestUrlCollector:
                 assert False
         assert True
 
+    @mark.skip(reason="Should not rely on a csv file")
     def test_get_offer_urls_from_all_pages(self):
         with open("tests/test.csv") as csvfile:
             csv_reader = csv.reader(csvfile)
             for _ in range(5):
                 url = csv_reader.__next__()[0]
                 requests.head(url)
-

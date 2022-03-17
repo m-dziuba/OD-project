@@ -3,4 +3,4 @@ tox==3.24.5
 pytest==7.0.1
 pytest-cov==3.0.0
 mypy==0.941
-lxml
+tox-conda==0.9.2
