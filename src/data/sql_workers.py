@@ -3,6 +3,12 @@ from dotenv import load_dotenv
 import os
 
 
+# TODO create a sql initializer. Creates DB, tables, inserts all feature sets
+#  into it. Change add_offer_features to use SELECT WHERE to obtain id of feature set
+# TODO figure out a better way to add_offer and add_location. Again using SELECT
+#  WHERE
+# TODO change SQLWorker to use __del__? Not sure if using context manager is the
+#  best way forward
 class SQLWorker:
 
     def __init__(self, config):
