@@ -3,8 +3,8 @@ import requests
 import csv
 from pytest import mark
 from pytest import fixture
-from data.web_workers import DataExtractor
-from data.web_workers import URLCollector
+from data.web.workers import DataExtractor
+from data.web.workers import URLCollector
 
 
 source = 'https://www.otodom.pl/pl/oferta/luksusowy-apartament' \

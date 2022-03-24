@@ -1,2 +1,2 @@
 #!/bin/bash
-mpiexec -n 12 python ~/otodom/data/web_workers.py
+mpiexec -n 12 python ~/otodom/src/data/web/workers.py

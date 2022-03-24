@@ -48,7 +48,7 @@ class URLCollector(JSONUser):
         self.cities = cities
         self.districts = districts
         self.paginated_listings_urls: Deque[str] = deque()
-        self.offers_urls: List[str] = []
+        self.offers_urls: List[Any] = []
 
     def get_offer_urls_from_all_pages(self):
         comm = MPI.COMM_WORLD
@@ -61,9 +61,16 @@ class URLCollector(JSONUser):
         for page in tqdm(urls):
             self.get_offer_urls_from_page(page)
 
-        self.offers_urls = comm.gather(self.offers_urls, root=0)
+        self.offers_urls = self.gather_data(comm)
+
         if rank == 0:
             self.save_urls_to_csv()
+
+    def gather_data(self, comm):
+        gathered_data = comm.gather(self.offers_urls, root=0)
+        if gathered_data is not None:
+            return gathered_data
+        return []
 
     def split_urls_between_processes(self, rank, size):
         if rank == 0:
@@ -95,7 +102,7 @@ class URLCollector(JSONUser):
                     self.paginated_listings_urls.append(f"{url}?page={i + 1}")
 
     def save_urls_to_csv(self):
-        with open("tests/test.csv", 'w') as csv_file:
+        with open("/home/mateusz/otodom/tests/test.csv", 'w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=' ')
             for chunk in self.offers_urls:
                 for offer_url in chunk:
