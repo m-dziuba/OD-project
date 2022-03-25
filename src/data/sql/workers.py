@@ -131,7 +131,7 @@ class SQLOperator(SQLWorker):
             insert_data[column_name] = self.get_row_id(key, query_data[key])
 
         self.insert_into_table("offer_features", insert_data)
-    
+
     def add_location(self, offer_id, data):
         # TODO perhaps split func into coordinates/geo_levels/locations
         data["coordinates"]["offer_id"] = offer_id
@@ -149,6 +149,90 @@ class SQLOperator(SQLWorker):
         self.insert_into_table("locations", insert_data)
 
 
+def add_offer(oper):
+    data = {
+        "url": "https://adwadw.com",
+        "date_created": datetime.datetime.now(),
+        "date_modified": datetime.datetime.now(),
+        "description": "adwadwadwa",
+    }
+    oper.insert_into_table("offers", data)
+
+
+def check_features(oper):
+    additional_data = {
+        "two_floors": 1,
+        "elevator": 1,
+        "balcony": 1,
+        "parking_space": 1,
+        "storage": 1,
+        "cellar": 1,
+        "ac": 1,
+        "separate_kitchen": 1,
+        "garden": 1,
+
+    }
+
+    furnishing_data = {
+        "furniture": 0,
+        "fridge": 0,
+        "oven": 0,
+        "stove": 0,
+        "washing_machine": 0,
+        "dishwasher": 0,
+        "tv": 0,
+    }
+
+    safety_data = {
+        "intercom": 1,
+        "monitoring": 0,
+        "doors_windows": 1,
+        "closed_area": 1,
+        "alarm": 0,
+        "roller_blinds": 1,
+    }
+
+    media_data = {
+        "tv": 0,
+        "internet": 1,
+        "phone": 1}
+
+    test_data = {
+        "additional_features": additional_data,
+        "safety_features": safety_data,
+        "furnishing_features": furnishing_data,
+        "media_features": media_data,
+    }
+    oper.add_offer_features(1, test_data)
+
+
+def check_get_geo_levels_id(oper):
+    geo_data = {
+        "district": "wola",
+        "city": "warszawa",
+        "subregion": "warszawa",
+        "region": "mazowieckie",
+    }
+    oper.get_geo_levels_id(geo_data)
+
+
+def check_add_location(oper):
+    loc_data = {
+        'address': 'Warszawa, Wola, ul. Marcina Kasprzaka',
+        'coordinates': {
+            'latitude': 52.2279436,
+            'longitude': 20.9586224
+        },
+        'geo_levels': {
+            'city': 'Warszawa',
+            'district': 'Wola',
+            'subregion': 'Warszawa',
+            'region': 'mazowieckie',
+        }
+    }
+    oper.add_location(1, loc_data)
+
+
 if __name__ == "__main__":
     load_dotenv()
 
@@ -163,91 +247,6 @@ if __name__ == "__main__":
         "password": DB_PASSWORD,
         'database': DB_NAME
     }
-
-
-    def add_offer(oper):
-        data = {
-            "url": "https://adwadw.com",
-            "date_created": datetime.datetime.now(),
-            "date_modified": datetime.datetime.now(),
-            "description": "adwadwadwa",
-        }
-        oper.insert_into_table("offers", data)
-
-
-    def check_features(oper):
-        additional_data = {
-            "two_floors": 1,
-            "elevator": 1,
-            "balcony": 1,
-            "parking_space": 1,
-            "storage": 1,
-            "cellar": 1,
-            "ac": 1,
-            "separate_kitchen": 1,
-            "garden": 1,
-
-        }
-
-        furnishing_data = {
-            "furniture": 0,
-            "fridge": 0,
-            "oven": 0,
-            "stove": 0,
-            "washing_machine": 0,
-            "dishwasher": 0,
-            "tv": 0,
-        }
-
-        safety_data = {
-            "intercom": 1,
-            "monitoring": 0,
-            "doors_windows": 1,
-            "closed_area": 1,
-            "alarm": 0,
-            "roller_blinds": 1,
-        }
-
-        media_data = {
-            "tv": 0,
-            "internet": 1,
-            "phone": 1}
-
-        test_data = {
-            "additional_features": additional_data,
-            "safety_features": safety_data,
-            "furnishing_features": furnishing_data,
-            "media_features": media_data,
-        }
-        oper.add_offer_features(1, test_data)
-
-
-    def check_get_geo_levels_id(oper):
-        geo_data = {
-            "district": "wola",
-            "city": "warszawa",
-            "subregion": "warszawa",
-            "region": "mazowieckie",
-        }
-        oper.get_geo_levels_id(geo_data)
-
-
-    def check_add_location(oper):
-        loc_data = {
-            'address': 'Warszawa, Wola, ul. Marcina Kasprzaka',
-            'coordinates': {
-                'latitude': 52.2279436,
-                'longitude': 20.9586224
-            },
-            'geo_levels': {
-                'city': 'Warszawa',
-                'district': 'Wola',
-                'subregion': 'Warszawa',
-                'region': 'mazowieckie',
-            }
-        }
-        oper.add_location(1, loc_data)
-
 
     with SQLInitiator(db_config) as initiator:
         initiator.clear_db()
