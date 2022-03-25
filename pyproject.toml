@@ -10,6 +10,7 @@ addopts=[
 python_classes = "Test*"
 markers =[
     "data: tests everything inside data folder",
+    "github: testable with github actions",
 ]
 
 [tool.mypy]

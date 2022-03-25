@@ -24,6 +24,7 @@ def url_collector():
     return URLCollector(base_url, cities, districts)
 
 
+@mark.github
 @mark.data
 class TestDataExtractor:
 
@@ -113,6 +114,7 @@ class TestDataExtractor:
     #     assert True
 
 
+@mark.github
 # TODO redo after URLCollector is improved
 class TestUrlCollector:
 

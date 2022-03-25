@@ -56,7 +56,7 @@ class SQLWorker:
     def get_row_id(self, table, data):
         where_string = " AND ".join([f"{key}=%({key})s" for key in data.keys()])
         get_table_id_query = (f"SELECT EXISTS("
-                              f"SELECT id FROM {table} "
+                              f"SELECT {table}.id FROM {table} "
                               f"WHERE {where_string})")
         self.execute_read_query(get_table_id_query, data)
         return self.get_result_from_cursor()[0]
@@ -134,16 +134,20 @@ class SQLOperator(SQLWorker):
 
     def add_location(self, offer_id, data):
         # TODO perhaps split func into coordinates/geo_levels/locations
-        data["coordinates"]["offer_id"] = offer_id
-        self.insert_into_table("coordinates", data["coordinates"])
-        geo_levels_id = self.get_row_id("geo_levels", data)
+        address_data = data["address"]
+        coordinates_data = data["coordinates"]
+        coordinates_data["offer_id"] = offer_id
+        geo_levels_data = data["geo_levels"]
+
+        self.insert_into_table("coordinates", coordinates_data)
+        geo_levels_id = self.get_row_id("geo_levels", geo_levels_data)
         if geo_levels_id == 0:
-            self.insert_into_table("geo_levels", data)
-            geo_levels_id = self.get_row_id("geo_levels", data)
+            self.insert_into_table("geo_levels", geo_levels_data)
+            geo_levels_id = self.get_row_id("geo_levels", geo_levels_data)
 
         insert_data = {
             "offer_id": offer_id,
-            "address": data["address"],
+            "address": address_data,
             "geo_levels_id": geo_levels_id
         }
         self.insert_into_table("locations", insert_data)
@@ -206,16 +210,6 @@ def check_features(oper):
     oper.add_offer_features(1, test_data)
 
 
-def check_get_geo_levels_id(oper):
-    geo_data = {
-        "district": "wola",
-        "city": "warszawa",
-        "subregion": "warszawa",
-        "region": "mazowieckie",
-    }
-    oper.get_geo_levels_id(geo_data)
-
-
 def check_add_location(oper):
     loc_data = {
         'address': 'Warszawa, Wola, ul. Marcina Kasprzaka',
@@ -256,5 +250,4 @@ if __name__ == "__main__":
 
     with SQLOperator(db_config) as operator:
         check_add_location(operator)
-        check_get_geo_levels_id(operator)
         check_features(operator)
