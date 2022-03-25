@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import List, Deque, Dict, TypedDict, Any
 from bs4 import BeautifulSoup
 import requests
@@ -7,7 +8,6 @@ from collections import deque
 # Temporary imports
 import csv
 from tqdm import tqdm
-
 
 # Custom Types
 JsonDict = Dict[str, Any]
@@ -21,6 +21,7 @@ class LocationDict(TypedDict):
 
 class JSONUser:
     """Interface for classes that obtain json from otodom website"""
+
     @staticmethod
     def get_json(url):
         """
@@ -48,7 +49,7 @@ class URLCollector(JSONUser):
         self.cities = cities
         self.districts = districts
         self.paginated_listings_urls: Deque[str] = deque()
-        self.offers_urls: List[str] = []
+        self.offers_urls: List[Any] = []
 
     def get_offer_urls_from_all_pages(self):
         comm = MPI.COMM_WORLD
@@ -61,15 +62,21 @@ class URLCollector(JSONUser):
         for page in tqdm(urls):
             self.get_offer_urls_from_page(page)
 
-        self.offers_urls = comm.gather(self.offers_urls, root=0)
+        self.offers_urls = self.gather_data(comm)
+
         if rank == 0:
             self.save_urls_to_csv()
+
+    def gather_data(self, comm):
+        gathered_data = comm.gather(self.offers_urls, root=0)
+        if gathered_data is not None:
+            return gathered_data
+        return []
 
     def split_urls_between_processes(self, rank, size):
         if rank == 0:
             urls: List[List[str]] = [[] for _ in range(size)]
             self.get_pages_urls()
-
             i = 0
             while self.paginated_listings_urls:
                 urls[i].append(self.paginated_listings_urls.pop())
@@ -95,7 +102,7 @@ class URLCollector(JSONUser):
                     self.paginated_listings_urls.append(f"{url}?page={i + 1}")
 
     def save_urls_to_csv(self):
-        with open("tests/test.csv", 'w') as csv_file:
+        with open("/home/mateusz/otodom/tests/test.csv", 'w') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=' ')
             for chunk in self.offers_urls:
                 for offer_url in chunk:
@@ -180,24 +187,18 @@ class DataExtractor(JSONUser):
         return location
 
     # TODO try to figure out what those "statistics" actually are
-    # def get_statistics(self):
-    #     statistics_json = self.data_json["statistics"]
-    #     return json.dumps(statistics_json, indent=4)
-
-    # TODO implement get_all_data function in a sensible way
-    # def get_all_data(self):
-    #     self.get_images()
-    #     self.get_description()
-    #     self.get_date_created()
-    #     self.get_date_modified()
-    #     self.get_features()
-    #     self.get_location()
+    def get_statistics(self):
+        statistics_json = self.data_json["statistics"]
+        return json.dumps(statistics_json, indent=4)
 
 
 if __name__ == "__main__":
     # testing
-    crawler_cities = ["warszawa"]
-    crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
-    crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
-    webcrawler = URLCollector(crawler_base_url, crawler_cities, crawler_districts)
-    webcrawler.get_offer_urls_from_all_pages()
+    # crawler_cities = ["warszawa"]
+    # crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
+    # crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
+    # webcrawler = URLCollector(crawler_base_url, crawler_cities, crawler_districts)
+    # webcrawler.get_offer_urls_from_all_pages()
+    test_url = "https://www.otodom.pl/pl/oferta/bliska-wola-tower-deweloperskie-lub-pod-klucz-ID4e3Yd"
+    extractor = DataExtractor(test_url)
+    pprint(extractor.get_location())
