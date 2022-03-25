@@ -25,20 +25,19 @@ class SQLWorker:
     def __enter__(self):
         self.db_conn = mysql.connector.connect(**self.config)
         self.cursor = self.db_conn.cursor(buffered=True)
-
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             self.cursor.close()
             self.db_conn.close()
-        except AttributeError:
-            print("Not closable")
+        except mysql.connector.Error as err:
+            print("Closing DB connection failed. Connection not closable")
+            print(err.msg, "ERR_No:", err.errno)
 
     def insert_into_table(self, table, data):
         column_names = self.get_column_names(table)
-        column_names_string = ", " .join(column_names)
-
+        column_names_string = ", ".join(column_names)
         values_string = ", ".join(
             (f'%({column_name})s' for column_name in column_names)
         )
@@ -55,20 +54,24 @@ class SQLWorker:
                               "WHERE table_schema='otodom' "
                               f"AND table_name='{table}'")
         self.execute_read_query(column_names_query)
+        # TODO error here or at fill_all. Sometimes column_name doesn't return all columns?
+        column_names = next(zip(*self.cursor.fetchall()))
+        return tuple(name for name in column_names if name != "id")
 
-        return tuple(column[0] for column in self.cursor.fetchall()[1:])
-
-    def execute_insert_query(self, query, data=None):   # TODO change name
+    def execute_insert_query(self, query, data=None):  # TODO change name
         try:
             self.cursor.execute(query, data)
-            self.db_conn.commit()
         except mysql.connector.Error as err:
+            print("Invalid insert query")
             print(err.msg, "ERR_No:", err.errno)
+        else:
+            self.db_conn.commit()
 
-    def execute_read_query(self, query):    # TODO change name
+    def execute_read_query(self, query, data=None):  # TODO change name
         try:
-            self.cursor.execute(query)
+            self.cursor.execute(query, data)
         except mysql.connector.Error as err:
+            print("Invalid read query")
             print(err.msg, "ERR_No:", err.errno)
 
 
@@ -83,11 +86,11 @@ class SQLInitiator(SQLWorker):
         self.cursor.execute("CREATE DATABASE otodom;")
         self.cursor.execute("USE otodom;")
 
+    # TODO don't like this maybe move the whole class to create_table_queries
     def init_all_tables(self):
-        create_table_queries.all_tables(self.tables)        # TODO don't like this maybe move the whole class there
+        create_table_queries.all_tables(self.tables)  # TODO <---
         for table_name in self.tables:
             table_description = self.tables[table_name]
-            print(f"Creating table {table_name}: ", end='')
             self.execute_insert_query(table_description)
 
     def fill_all_features_tables(self):
@@ -105,81 +108,44 @@ class SQLInitiator(SQLWorker):
 # TODO rework to use insert_into_table()
 class SQLOperator(SQLWorker):
 
-    def add_images(self, offer_id, images_urls):
-        query = ("INSERT INTO images"
-                 "(offer_id, image_url)"
-                 "VALUES(%s, %s)")
-        for url in images_urls:
-            data = (offer_id, url)
-            self.execute_insert_query(query, data)
+    # TODO add resilience against invalid table names
+    def get_table_id(self, table, data):
+        where_string = " AND ".join([f"{key}=%({key})s" for key in data.keys()])
+        search_for_existing_geo_levels_query = (f"SELECT EXISTS("
+                                                f"SELECT {table}.id FROM {table} "
+                                                f"WHERE {where_string})")
+        self.execute_read_query(search_for_existing_geo_levels_query, data)
 
-    def add_offer(self, data):
-        query = ("INSERT INTO offers"
-                 "(url, date_created, date_modified, description)"
-                 "VALUES (%s, %s, %s, %s)")     # TODO change to a dict?
-        self.execute_insert_query(query, data)
+        return self.cursor.fetchone()[0]
 
-    def add_additional_features(self, data):
-        query = ("INSERT INTO additional_features"
-                 "(two_floors, elevator, balcony, parking_space,"
-                 "storage, cellar, ac, separate_kitchen, garden)"
-                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)")     # TODO change to a dict?
-        self.execute_insert_query(query, data)
+    # TODO it doesn't seem right that those inserts have different methods
+    def add_offer_features(self, offer_id, query_data):  # TODO change to search for id
+        insert_data = {"offer_id": offer_id}
+        for key in query_data.keys():
+            column_name = key.replace("features", "id")
+            insert_data[column_name] = self.get_table_id(key, query_data[key])
 
-    def add_safety_features(self, data):
-        query = ("INSERT INTO safety_features"
-                 "(intercom, monitoring, doors_windows,"
-                 " closed_area, alarm, roller_blinds)"
-                 "VALUES (%s, %s, %s, %s, %s, %s)")     # TODO change to a dict?
-        self.execute_insert_query(query, data)
+        self.insert_into_table("offer_features", insert_data)
 
-    def add_media_features(self, data):
-        query = ("INSERT INTO media_features"
-                 "(tv, internet, phone)"
-                 "VALUES (%s, %s, %s)")
-        self.execute_insert_query(query, data)
+    def add_location(self, offer_id, data):  # TODO implement
+        data["coordinates"]["offer_id"] = offer_id
+        self.insert_into_table("coordinates", data["coordinates"])
+        geo_levels_id = self.get_geo_levels_id(data["geo_levels"])
+        insert_data = {
+            "offer_id": offer_id,
+            "address": data["address"],
+            "geo_levels_id": geo_levels_id
+        }
 
-    def add_furnishing_features(self, data):
-        query = ("INSERT INTO furnishing_features"
-                 "(furniture, fridge, oven, stove,"
-                 " washing_machine, dishwasher, tv)"
-                 "VALUES (%s, %s, %s, %s, %s, %s, %s)")     # TODO change to a dict?
-        self.execute_insert_query(query, data)
+        self.insert_into_table("locations", insert_data)
 
-    def add_offer_features(self, data):
-        query = ("INSERT INTO offer_features"
-                 "(additional_id, safety_id, furnishing_id, media_id)"
-                 "VALUES (%s, %s, %s, %s)")
-        self.execute_insert_query(query, data)
+    def get_geo_levels_id(self, data):
+        geo_levels_id = self.get_table_id("geo_levels", data)
+        if geo_levels_id == 0:
+            self.insert_into_table("geo_levels", data)  # TODO this func does two things instead of one
+            geo_levels_id = "SELECT LAST_INSERT_ID()"
 
-    def add_location(self, data):
-        query = ("INSERT INTO locations"
-                 "(address, geolevels_id, coordinates_id)"
-                 "VALUES (%s, %s, %s)")
-        self.execute_insert_query(query, data)
-
-    def add_coordinates(self, data):
-        query = ("INSERT INTO coordinates"
-                 "(longitude, latitude)"
-                 "VALUES(%(longitude)s, %(latitude)s)")
-        self.execute_insert_query(query, data)
-
-    def add_geolevel(self, data):
-        query = ("INSERT INTO geolevels"
-                 "(district, city, subregion, region)"
-                 "VALUES(%(district)s, %(city)s, %(subregion)s, %(region)s )")
-        self.execute_insert_query(query, data)
-
-    def add_characteristics(self, data):
-        query = ("INSERT INTO characteristics"
-                 "(price, area, price_per_meter, no_of_rooms, market,"
-                 " floor, year_built, no_of_floors, form_of_ownership,"
-                 " type_of_building, heating, standard_of_completion,"
-                 " type_of_ownership, windows, material, available_from,"
-                 " remote_service)"
-                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,"
-                 " %s, %s, %s, %s, %s, %s)")
-        self.execute_insert_query(query, data)
+        return geo_levels_id
 
 
 if __name__ == "__main__":
@@ -191,12 +157,91 @@ if __name__ == "__main__":
     DB_NAME = os.getenv("DB_NAME")
 
     db_config = {
-            "host": DB_HOST,
-            "user": DB_USER,
-            "password": DB_PASSWORD,
-            'database': DB_NAME
+        "host": DB_HOST,
+        "user": DB_USER,
+        "password": DB_PASSWORD,
+        'database': DB_NAME
+    }
+
+
+    # with SQLInitiator(db_config) as initiator:
+    #     initiator.clear_db()
+    #     initiator.init_all_tables()
+    #     initiator.fill_all_features_tables()
+
+    def check_features(oper):
+        additional_data = {
+            "two_floors": 1,
+            "elevator": 1,
+            "balcony": 1,
+            "parking_space": 1,
+            "storage": 1,
+            "cellar": 1,
+            "ac": 1,
+            "separate_kitchen": 1,
+            "garden": 1,
+
         }
-    with SQLInitiator(db_config) as initiator:
-        initiator.clear_db()
-        initiator.init_all_tables()
-        initiator.fill_all_features_tables()
+
+        furnishing_data = {
+            "furniture": 0,
+            "fridge": 0,
+            "oven": 0,
+            "stove": 0,
+            "washing_machine": 0,
+            "dishwasher": 0,
+            "tv": 0,
+        }
+
+        safety_data = {
+            "intercom": 1,
+            "monitoring": 0,
+            "doors_windows": 1,
+            "closed_area": 1,
+            "alarm": 0,
+            "roller_blinds": 1,
+        }
+
+        media_data = {
+            "tv": 0,
+            "internet": 1,
+            "phone": 1}
+
+        test_data = {
+            "additional_features": additional_data,
+            "safety_features": safety_data,
+            "furnishing_features": furnishing_data,
+            "media_features": media_data,
+        }
+        oper.add_offer_features(1, "media_features", test_data)
+
+
+    def check_get_geo_levels_id(oper):
+        geo_data = {
+            "district": "wola",
+            "city": "warszawa",
+            "subregion": "warszawa",
+            "region": "mazowieckie",
+        }
+        oper.get_geo_levels_id(geo_data)
+
+
+    def check_add_location(oper):
+        loc_data = {
+            'address': 'Warszawa, Wola, ul. Marcina Kasprzaka',
+            'coordinates': {
+                'latitude': 52.2279436,
+                'longitude': 20.9586224
+            },
+            'geo_levels': {
+                'city': 'Warszawa',
+                'district': 'Wola',
+                'region': 'mazowieckie',
+                'subregion': 'Warszawa'
+            }
+        }
+        oper.add_location(1, loc_data)
+
+
+    with SQLOperator(db_config) as operator:
+        pass

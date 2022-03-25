@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import List, Deque, Dict, TypedDict, Any
 from bs4 import BeautifulSoup
 import requests
@@ -203,8 +204,11 @@ class DataExtractor(JSONUser):
 
 if __name__ == "__main__":
     # testing
-    crawler_cities = ["warszawa"]
-    crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
-    crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
-    webcrawler = URLCollector(crawler_base_url, crawler_cities, crawler_districts)
-    webcrawler.get_offer_urls_from_all_pages()
+    # crawler_cities = ["warszawa"]
+    # crawler_districts = ["zoliborz", "mokotow", "ochota", "wola"]
+    # crawler_base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
+    # webcrawler = URLCollector(crawler_base_url, crawler_cities, crawler_districts)
+    # webcrawler.get_offer_urls_from_all_pages()
+    test_url = "https://www.otodom.pl/pl/oferta/bliska-wola-tower-deweloperskie-lub-pod-klucz-ID4e3Yd"
+    extractor = DataExtractor(test_url)
+    pprint(extractor.get_location())

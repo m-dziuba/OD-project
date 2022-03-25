@@ -11,7 +11,7 @@ def all_tables(tables: Dict[str, str]):
     offer_features(tables)
 
     coordinates(tables)
-    geolevels(tables)
+    geo_levels(tables)
     locations(tables)
 
     characteristics(tables)
@@ -91,7 +91,7 @@ def safety_features(tables: Dict[str, str]):
     )
 
 
-def media_features(tables: Dict[str, str]):
+def furnishing_features(tables: Dict[str, str]):
     tables["furnishing_features"] = (
         """
         CREATE TABLE furnishing_features
@@ -109,7 +109,7 @@ def media_features(tables: Dict[str, str]):
     )
 
 
-def furnishing_features(tables: Dict[str, str]):
+def media_features(tables: Dict[str, str]):
     tables["media_features"] = (
         """
         CREATE TABLE media_features
@@ -129,20 +129,20 @@ def locations(tables: Dict[str, str]):
         CREATE TABLE locations
         (
             id             INT AUTO_INCREMENT PRIMARY KEY,
+            offer_id       INT NOT NULL,
             address        VARCHAR(50),
-            geolevels_id   INT,
-            coordinates_id INT,
-            FOREIGN KEY (geolevels_id) REFERENCES geolevels (id),
-            FOREIGN KEY (coordinates_id) REFERENCES coordinates (id)
+            geo_levels_id   INT,
+            FOREIGN KEY (offer_id) REFERENCES offers (id),
+            FOREIGN KEY (geo_levels_id) REFERENCES geo_levels (id)
         );
         """
     )
 
 
-def geolevels(tables: Dict[str, str]):
-    tables["geolevels"] = (
+def geo_levels(tables: Dict[str, str]):
+    tables["geo_levels"] = (
         """
-        CREATE TABLE geolevels
+        CREATE TABLE geo_levels
         (
         id        INT AUTO_INCREMENT PRIMARY KEY,
         district  VARCHAR(50) NOT NULL,
@@ -160,8 +160,10 @@ def coordinates(tables: Dict[str, str]):
         CREATE TABLE coordinates
         (
             id        INT AUTO_INCREMENT PRIMARY KEY,
+            offer_id       INT NOT NULL,
             longitude DOUBLE,
             latitude  DOUBLE,
+            FOREIGN KEY (offer_id) REFERENCES offers (id),
             UNIQUE (longitude, latitude)
         );
         """
@@ -174,6 +176,7 @@ def characteristics(tables: Dict[str, str]):
         CREATE TABLE characteristics
         (
             id                     INT AUTO_INCREMENT PRIMARY KEY,
+            offer_id               INT NOT NULL,
             price                  INT,
             area                   FLOAT,
             price_per_meter        INT,
@@ -190,7 +193,8 @@ def characteristics(tables: Dict[str, str]):
             windows                VARCHAR(50), # TODO change to a mapping
             material               VARCHAR(50), # TODO change to a mapping
             available_from         VARCHAR(50), # TODO change to a date
-            remote_service         TINYINT
+            remote_service         TINYINT,
+            FOREIGN KEY (offer_id) REFERENCES offers (id)
         );
         """
     )
