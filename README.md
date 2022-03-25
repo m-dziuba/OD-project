@@ -5,7 +5,7 @@ Even though I cannot currently afford one I'm still invested in the market becau
 of having my own place in the future.
   
 It has occured to me that some of the offers are just straight terrible. 
-The builidng looks like a ruin, the location is suboptimal, there are no photos 
+The building looks like a ruin, the location is suboptimal, there are no photos 
 of the place or there are only renders of what the place could look like.  
   
 So an idea for a project sparked in my head. Perhaps I could write a program that
