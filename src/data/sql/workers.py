@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Tuple, Optional, Any
+from typing import Dict, Tuple, Optional, Any, Union
 import os
 from itertools import product
 
@@ -13,6 +13,11 @@ import tables_create_queries
 
 # TODO change SQLWorker to use __del__? Not sure if using context manager is the best way forward
 class SQLWorker:
+    """
+    Class with basic SQL functionality like insert, execute,
+    get results from cursor etc. Uses context manager.
+    """
+
     # TODO maybe change order of methods
     def __init__(self, config: Dict[str, str]):
         self.config = config
@@ -34,6 +39,13 @@ class SQLWorker:
 
     # TODO add resilience against invalid table names
     def insert_into_table(self, table: str, data: Dict[str, str]):
+        """
+        Insert `data` into `table`. Data has to be a `dict` where keys
+        are the column names and `data[key]` is the value to be inserted into it
+
+        :param table: Name of the table
+        :param data:  Data inserted into the table
+        """
         # TODO probably unnecessary but might be needed to check if data is correct
         column_names: Tuple[str, ...] = self.get_column_names(table)
         column_names_string: str = ", ".join(column_names)
@@ -46,15 +58,31 @@ class SQLWorker:
         self.execute_insert_query(insert_query, data)
 
     def get_column_names(self, table: str) -> Tuple[str, ...]:
+        """
+        Get column names of given table
+
+        :param table: table name
+        :return: tuple containing names of columns
+        """
         column_names_query: str = ("SELECT column_name "
                                    "FROM information_schema.columns "
                                    "WHERE table_schema='otodom' "
-                                   f"AND table_name='{table}'")
-        self.execute_read_query(column_names_query)
+                                   f"AND table_name='%s'")
+        self.execute_read_query(column_names_query, table)
         column_names: Tuple[Any, ...] = self.get_result_from_cursor()
         return tuple(name for name in column_names if name != "id")
 
     def get_row_id(self, table: str, data: Dict[str, str]) -> int:
+        """
+        Get ID of the row inside `table` that has entries exactly like `data`.
+
+        `data` has to be a `dict` where keys are column names and each
+        `data[column_name]` is a value that has to be present in the row, under
+        the given column
+
+        :param table: name of the table that is being searched in
+        :param data: dict containing column_name: value pairs
+        """
         where_string: str = " AND ".join([f"{key}=%({key})s" for key in data.keys()])
         get_table_id_query: str = (f"SELECT EXISTS("
                                    f"SELECT {table}.id FROM {table} "
@@ -64,6 +92,15 @@ class SQLWorker:
 
     def execute_insert_query(self, query: str,
                              data: Optional[Dict[str, str]] = None):
+        """
+        Execute an insert query using values from `data` if present. `data` has to be a
+        `dict` where keys are column names and each`data[column_name]` is a
+        value that will be inserted into the row, under the given column.
+        If insert fails print error message and number. Else commit the insert.
+
+        :param query: MySQL INSERT INTO query
+        :param data:
+        """
         try:
             self.cursor.execute(query, data)
         except mysql.connector.Error as err:
@@ -73,7 +110,19 @@ class SQLWorker:
             self.db_conn.commit()
 
     def execute_read_query(self, query: str,
-                           data: Optional[Dict[str, str]] = None):
+                           data: Union[Dict[str, str], Tuple[str, ...], str]):
+        """
+        Execute read query, using `data` as query parameters. If `data` is a
+        dict it has to be a `dict` where keys are column names and each
+        `data[column_name]` is a value that will be inserted into the row, under
+        the given column. If a tuple the order of query parameters has to be the
+        same as inside the query. If a string then there can only be one query
+        parameter in the query. Results have to be retrieved from the cursor.
+
+        :param query: SELECT MySQL query
+        :param data: search parameters for the query that go after WHERE, GROUP
+         BY, etc.
+        """
         try:
             self.cursor.execute(query, data)
         except mysql.connector.Error as err:
@@ -81,6 +130,13 @@ class SQLWorker:
             print(err.msg, "ERR_No:", err.errno)
 
     def execute_create_table_query(self, query: str, table_name: str):
+        """
+        Execute CREATE TABLE query. Prints table name and if the query was
+        successful. If there are no errors query is committed.
+
+        :param query: CREATE TABLE MySQL query, describing the schema
+        :param table_name: Name of the table that is being created
+        """
         try:
             print(f"Creating table {table_name}: ", end="")
             self.cursor.execute(query)
@@ -95,6 +151,10 @@ class SQLWorker:
 
 
 class SQLInitiator(SQLWorker):
+    """
+    Used to initiate the database. Can clear previous DB and create a new one,
+    add all tables, fill feature tables.
+    """
 
     def __init__(self, config: Dict[str, str]):
         super().__init__(config)
