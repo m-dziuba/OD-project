@@ -67,7 +67,7 @@ class SQLWorker:
         column_names_query: str = ("SELECT column_name "
                                    "FROM information_schema.columns "
                                    "WHERE table_schema='otodom' "
-                                   f"AND table_name='%s'")
+                                   "AND table_name='%s'")
         self.execute_read_query(column_names_query, table)
         column_names: Tuple[Any, ...] = self.get_result_from_cursor()
         return tuple(name for name in column_names if name != "id")
