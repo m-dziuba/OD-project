@@ -1,25 +1,24 @@
 from typing import Dict
 
 
-def all_tables(tables: Dict[str, str]):
-    offers(tables)
+def get_all_tables_queries() -> Dict[str, str]:
+    return {
+        "offers": get_offers_query(),
+        "additional_features": get_additional_features_query(),
+        "furnishing_features": get_furnishing_features_query(),
+        "safety_features": get_safety_features_query(),
+        "media_features": get_media_features_query(),
+        "offer_features": get_offer_features_query(),
+        "coordinates": get_coordinates_query(),
+        "geo_levels": get_geo_levels_query(),
+        "locations": get_locations(),
+        "characteristics": get_characteristics_query(),
+        "images": get_images_query(),
+    }
 
-    additional_features(tables)
-    furnishing_features(tables)
-    safety_features(tables)
-    media_features(tables)
-    offer_features(tables)
 
-    coordinates(tables)
-    geo_levels(tables)
-    locations(tables)
-
-    characteristics(tables)
-    images(tables)
-
-
-def offers(tables: Dict[str, str]):
-    tables["offers"] = (
+def get_offers_query() -> str:
+    return (
         """
         CREATE TABLE offers
         (
@@ -33,8 +32,8 @@ def offers(tables: Dict[str, str]):
     )
 
 
-def offer_features(tables: Dict[str, str]):
-    tables["offer_features"] = (
+def get_offer_features_query() -> str:
+    return (
         """
         CREATE TABLE offer_features
         (
@@ -54,8 +53,8 @@ def offer_features(tables: Dict[str, str]):
     )
 
 
-def additional_features(tables: Dict[str, str]):
-    tables["additional_features"] = (
+def get_additional_features_query() -> str:
+    return (
         """
         CREATE TABLE additional_features
         (
@@ -74,8 +73,8 @@ def additional_features(tables: Dict[str, str]):
     )
 
 
-def safety_features(tables: Dict[str, str]):
-    tables["safety_features"] = (
+def get_safety_features_query() -> str:
+    return (
         """
         CREATE TABLE safety_features
         (
@@ -91,8 +90,8 @@ def safety_features(tables: Dict[str, str]):
     )
 
 
-def furnishing_features(tables: Dict[str, str]):
-    tables["furnishing_features"] = (
+def get_furnishing_features_query() -> str:
+    return (
         """
         CREATE TABLE furnishing_features
         (
@@ -109,8 +108,8 @@ def furnishing_features(tables: Dict[str, str]):
     )
 
 
-def media_features(tables: Dict[str, str]):
-    tables["media_features"] = (
+def get_media_features_query() -> str:
+    return (
         """
         CREATE TABLE media_features
         (
@@ -123,8 +122,8 @@ def media_features(tables: Dict[str, str]):
     )
 
 
-def locations(tables: Dict[str, str]):
-    tables["locations"] = (
+def get_locations() -> str:
+    return (
         """
         CREATE TABLE locations
         (
@@ -139,8 +138,8 @@ def locations(tables: Dict[str, str]):
     )
 
 
-def geo_levels(tables: Dict[str, str]):
-    tables["geo_levels"] = (
+def get_geo_levels_query() -> str:
+    return (
         """
         CREATE TABLE geo_levels
         (
@@ -154,8 +153,8 @@ def geo_levels(tables: Dict[str, str]):
     )
 
 
-def coordinates(tables: Dict[str, str]):
-    tables["coordinates"] = (
+def get_coordinates_query() -> str:
+    return (
         """
         CREATE TABLE coordinates
         (
@@ -170,8 +169,9 @@ def coordinates(tables: Dict[str, str]):
     )
 
 
-def characteristics(tables: Dict[str, str]):
-    tables["characteristics"] = (
+# TODO do todos... IDE doesn't see them for some reason
+def get_characteristics_query() -> str:
+    return (
         """
         CREATE TABLE characteristics
         (
@@ -181,18 +181,18 @@ def characteristics(tables: Dict[str, str]):
             area                   FLOAT,
             price_per_meter        INT,
             no_of_rooms            INT,
-            market                 VARCHAR(50), # TODO change to a mapping
+            market                 VARCHAR(50),     # TODO change to a mapping
             floor                  INT,
             year_built             YEAR,
             no_of_floors           INT,
-            form_of_ownership      VARCHAR(50), # TODO change to a mapping,
-            type_of_building       VARCHAR(50), # TODO change to a mapping
-            heating                VARCHAR(50), # TODO change to a mapping
-            standard_of_completion VARCHAR(50), # TODO change to a mapping
-            type_of_ownership      VARCHAR(50), # TODO change to a mapping
-            windows                VARCHAR(50), # TODO change to a mapping
-            material               VARCHAR(50), # TODO change to a mapping
-            available_from         VARCHAR(50), # TODO change to a date
+            form_of_ownership      VARCHAR(50),     # TODO change to a mapping,
+            type_of_building       VARCHAR(50),     # TODO change to a mapping
+            heating                VARCHAR(50),     # TODO change to a mapping
+            standard_of_completion VARCHAR(50),     # TODO change to a mapping
+            type_of_ownership      VARCHAR(50),     # TODO change to a mapping
+            windows                VARCHAR(50),     # TODO change to a mapping
+            material               VARCHAR(50),     # TODO change to a mapping
+            available_from         VARCHAR(50),     # TODO change to a date
             remote_service         TINYINT,
             FOREIGN KEY (offer_id) REFERENCES offers (id)
         );
@@ -200,8 +200,8 @@ def characteristics(tables: Dict[str, str]):
     )
 
 
-def images(tables: Dict[str, str]):
-    tables["images"] = (
+def get_images_query() -> str:
+    return (
         """
         CREATE TABLE images
         (

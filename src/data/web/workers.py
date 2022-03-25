@@ -9,7 +9,6 @@ from collections import deque
 import csv
 from tqdm import tqdm
 
-
 # Custom Types
 JsonDict = Dict[str, Any]
 
@@ -22,6 +21,7 @@ class LocationDict(TypedDict):
 
 class JSONUser:
     """Interface for classes that obtain json from otodom website"""
+
     @staticmethod
     def get_json(url):
         """
@@ -77,7 +77,6 @@ class URLCollector(JSONUser):
         if rank == 0:
             urls: List[List[str]] = [[] for _ in range(size)]
             self.get_pages_urls()
-
             i = 0
             while self.paginated_listings_urls:
                 urls[i].append(self.paginated_listings_urls.pop())
@@ -188,18 +187,9 @@ class DataExtractor(JSONUser):
         return location
 
     # TODO try to figure out what those "statistics" actually are
-    # def get_statistics(self):
-    #     statistics_json = self.data_json["statistics"]
-    #     return json.dumps(statistics_json, indent=4)
-
-    # TODO implement get_all_data function in a sensible way
-    # def get_all_data(self):
-    #     self.get_images()
-    #     self.get_description()
-    #     self.get_date_created()
-    #     self.get_date_modified()
-    #     self.get_features()
-    #     self.get_location()
+    def get_statistics(self):
+        statistics_json = self.data_json["statistics"]
+        return json.dumps(statistics_json, indent=4)
 
 
 if __name__ == "__main__":

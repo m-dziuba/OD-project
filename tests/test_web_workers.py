@@ -6,9 +6,8 @@ from pytest import fixture
 from data.web.workers import DataExtractor
 from data.web.workers import URLCollector
 
-
 source = 'https://www.otodom.pl/pl/oferta/luksusowy-apartament' \
-      '-stary-zoliborz-ID439ZN'
+         '-stary-zoliborz-ID439ZN'
 
 base_url = "https://www.otodom.pl/pl/oferty/sprzedaz/mieszkanie"
 cities = ["warszawa"]
@@ -121,7 +120,6 @@ class TestUrlCollector:
     def _init_webscraper(self, url_collector):
         self.url_collector = url_collector
 
-    # TODO this is quite slow...
     def test_get_pages_urls(self):
         self.url_collector.get_pages_urls()
 
