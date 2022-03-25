@@ -160,19 +160,20 @@ class SQLInitiator(SQLWorker):
         super().__init__(config)
         self.tables: Dict[str, str] = tables_create_queries.get_all_tables_queries()
 
-    def clear_db(self):
+    def reset_db(self):
+        """Drop otodom database, create new one, use it"""
         self.cursor.execute("DROP DATABASE IF EXISTS otodom;")
         self.cursor.execute("CREATE DATABASE otodom;")
         self.cursor.execute("USE otodom;")
 
     def init_all_tables(self):
+        """Create all tables"""
         for table_name in self.tables:
             table_description: str = self.tables[table_name]
             self.execute_create_table_query(table_description, table_name)
 
-        self.fill_all_features_tables()
-
-    def fill_all_features_tables(self):
+    def fill_features_tables(self):
+        """Fill all _feature tables except offer_features"""
         feature_tables: Tuple[str, str, str, str] = ("additional_features",
                                                      "safety_features",
                                                      "media_features",
@@ -190,7 +191,15 @@ class SQLInitiator(SQLWorker):
 class SQLOperator(SQLWorker):
 
     # TODO it doesn't seem right that those inserts have different methods
-    def add_offer_features(self, offer_id: int, query_data):
+    def add_offer_features(self, offer_id: int,
+                           query_data: Dict[str, Dict[str, str]]):
+        """
+        Insert data into offer_features table, with ids of features
+        corresponding to `query_data`
+
+        :param offer_id: ID of the offer, the insert corresponds to
+        :param query_data: Dict of dicts, containing binary feature data
+        """
         insert_data: Dict[str, str] = {"offer_id": str(offer_id)}
         for key in query_data.keys():
             column_name: str = key.replace("features", "id")
@@ -309,7 +318,7 @@ if __name__ == "__main__":
     }
 
     with SQLInitiator(db_config) as initiator:
-        initiator.clear_db()
+        initiator.reset_db()
         initiator.init_all_tables()
         initiator.fill_all_features_tables()
         add_offer(initiator)
